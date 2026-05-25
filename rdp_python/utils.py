@@ -16,7 +16,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from PIL import Image
+from PIL import Image, ImageGrab
 from mss import mss
 
 DEFAULT_HOST = "0.0.0.0"
@@ -145,12 +145,16 @@ def encode_screen_frame(image: Image.Image, jpeg_quality: int) -> bytes:
 def capture_screen_frame(monitor_index: int = 1, jpeg_quality: int = DEFAULT_JPEG_QUALITY) -> Tuple[bytes, int, int]:
     """Capture the primary screen and return JPEG bytes plus its dimensions."""
 
-    with mss() as screen_source:
-        monitor = screen_source.monitors[monitor_index]
-        shot = screen_source.grab(monitor)
-        image = Image.frombytes("RGB", shot.size, shot.rgb)
-        encoded = encode_screen_frame(image, jpeg_quality)
-        return encoded, image.width, image.height
+    try:
+        with mss() as screen_source:
+            monitor = screen_source.monitors[monitor_index]
+            shot = screen_source.grab(monitor)
+            image = Image.frombytes("RGB", shot.size, shot.rgb)
+    except Exception:
+        image = ImageGrab.grab()
+
+    encoded = encode_screen_frame(image, jpeg_quality)
+    return encoded, image.width, image.height
 
 
 def decode_screen_frame(jpeg_bytes: bytes) -> Image.Image:

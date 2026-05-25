@@ -81,6 +81,7 @@ python client.py --host 192.168.1.50 --port 5905 --username admin --password cha
 
 ## Troubleshooting
 
+- If the client exits with `ModuleNotFoundError: No module named '_tkinter'`, install a Python build that includes Tk support. On macOS, the python.org installer is the simplest option.
 - If mouse or keyboard control does not work, make sure the server process has permission to inject input on the host machine.
 - If the screen stays black, check that the user session on the server is unlocked and that screen capture is permitted.
 - If the client cannot connect, verify the host IP, port, and Windows firewall rules.

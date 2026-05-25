@@ -10,11 +10,20 @@ import socket
 import threading
 import time
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
-from PIL import Image, ImageTk
+from PIL import Image
 from cryptography.fernet import Fernet, InvalidToken
-from tkinter import BOTH, Canvas, Label, StringVar, Tk
+
+try:
+    from PIL import ImageTk
+    from tkinter import BOTH, Canvas, Label, StringVar, Tk
+    GUI_IMPORT_ERROR = None
+except ModuleNotFoundError as exc:
+    ImageTk = None  # type: ignore[assignment]
+    BOTH = None  # type: ignore[assignment]
+    Canvas = Label = StringVar = Tk = None  # type: ignore[assignment]
+    GUI_IMPORT_ERROR = exc
 
 from utils import (
     DEFAULT_HOST,
@@ -39,6 +48,10 @@ from utils import (
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
 LOGGER = logging.getLogger("rdp-client")
 DEFAULT_CLIENT_HOST = "127.0.0.1"
+
+
+class MissingGuiSupportError(RuntimeError):
+    """Raised when the local Python build does not include Tk support."""
 
 
 @dataclass
@@ -75,15 +88,16 @@ class RDPClient:
         self._latest_frame: Optional[Image.Image] = None
         self._latest_size: Tuple[int, int] = (1, 1)
         self._render_size: Tuple[int, int] = (1, 1)
-        self._status_text: Optional[StringVar] = None
-        self._window: Optional[Tk] = None
-        self._canvas: Optional[Canvas] = None
+        self._status_text: Optional[Any] = None
+        self._window: Optional[Any] = None
+        self._canvas: Optional[Any] = None
         self._image_id: Optional[int] = None
-        self._photo: Optional[ImageTk.PhotoImage] = None
+        self._photo: Optional[Any] = None
 
     def run(self) -> None:
         """Start the network worker and enter the Tkinter event loop."""
 
+        self._require_gui_support()
         self._window = Tk()
         self._window.title("Python RDP Client")
         self._window.geometry("1280x720")
@@ -226,6 +240,8 @@ class RDPClient:
 
         if self._canvas is None:
             return
+        if ImageTk is None:
+            self._require_gui_support()
 
         canvas_width = max(1, self._canvas.winfo_width())
         canvas_height = max(1, self._canvas.winfo_height())
@@ -318,6 +334,15 @@ class RDPClient:
             return
         self._window.after(0, lambda: self._status_text.set(text))
 
+    def _require_gui_support(self) -> None:
+        """Raise a clear error when Tk support is missing from the Python build."""
+
+        if GUI_IMPORT_ERROR is None:
+            return
+        raise MissingGuiSupportError(
+            "Tkinter is required for the GUI client. On macOS, install a Python build that includes Tk support, such as the python.org installer, then retry."
+        ) from None
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser for the client entry point."""
@@ -342,7 +367,11 @@ def main() -> None:
         password=args.password,
         reconnect_delay=args.reconnect_delay,
     )
-    client.run()
+    try:
+        client.run()
+    except MissingGuiSupportError as exc:
+        LOGGER.error("%s", exc)
+        raise SystemExit(2) from None
 
 
 if __name__ == "__main__":
