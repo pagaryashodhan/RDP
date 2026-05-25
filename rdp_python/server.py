@@ -295,13 +295,44 @@ class RDPServer:
 
         key_name = str(message.get("key", ""))
         char_value = str(message.get("char", ""))
-        if key_name and hasattr(pynput_keyboard.Key, key_name):
-            return getattr(pynput_keyboard.Key, key_name)
+        if key_name:
+            normalized_name = self._normalize_key_name(key_name)
+            if hasattr(pynput_keyboard.Key, normalized_name):
+                return getattr(pynput_keyboard.Key, normalized_name)
         if char_value:
             return pynput_keyboard.KeyCode.from_char(char_value)
         if len(key_name) == 1:
             return pynput_keyboard.KeyCode.from_char(key_name)
         return pynput_keyboard.Key.space
+
+    def _normalize_key_name(self, key_name: str) -> str:
+        """Map Tk keysyms to pynput key attribute names."""
+
+        aliases = {
+            "backspace": "backspace",
+            "caps_lock": "caps_lock",
+            "control_l": "ctrl_l",
+            "control_r": "ctrl_r",
+            "delete": "delete",
+            "down": "down",
+            "end": "end",
+            "escape": "esc",
+            "home": "home",
+            "insert": "insert",
+            "left": "left",
+            "page_down": "page_down",
+            "page_up": "page_up",
+            "return": "enter",
+            "right": "right",
+            "shift_l": "shift_l",
+            "shift_r": "shift_r",
+            "space": "space",
+            "tab": "tab",
+            "up": "up",
+        }
+
+        normalized = key_name.lower().replace(" ", "_")
+        return aliases.get(normalized, normalized)
 
     def _key_id(self, message: dict) -> str:
         """Build a stable identifier for tracking held-down keys."""
