@@ -23,7 +23,7 @@ DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 5905
 DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "changeme"
-DEFAULT_JPEG_QUALITY = 60
+DEFAULT_JPEG_QUALITY = 40
 DEFAULT_FPS = 8
 DEFAULT_RECONNECT_DELAY = 2.0
 DEFAULT_KDF_ITERATIONS = 200_000
@@ -140,7 +140,7 @@ def encode_screen_frame(image: Image.Image, jpeg_quality: int) -> bytes:
     buffer = BytesIO()
     if image.mode != "RGB":
         image = image.convert("RGB")
-    image.save(buffer, format="JPEG", quality=jpeg_quality, optimize=True)
+    image.save(buffer, format="JPEG", quality=jpeg_quality, optimize=False)
     return buffer.getvalue()
 
 
