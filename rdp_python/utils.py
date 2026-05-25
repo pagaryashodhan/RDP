@@ -138,6 +138,8 @@ def encode_screen_frame(image: Image.Image, jpeg_quality: int) -> bytes:
     """Compress a screenshot frame into JPEG bytes."""
 
     buffer = BytesIO()
+    if image.mode != "RGB":
+        image = image.convert("RGB")
     image.save(buffer, format="JPEG", quality=jpeg_quality, optimize=True)
     return buffer.getvalue()
 
